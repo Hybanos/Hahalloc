@@ -1,6 +1,6 @@
 # Hahalloc
 
-A lightweight, thread-safe[*](#thread-safety) memory allocator written in C, that can sometimes be faster than malloc. It is designed to track memory leaks and gives you a heap summary at the end of your program's execution.
+A lightweight, thread-safe[*](#thread-safety) memory allocator written in C, that can sometimes be faster than malloc. It is designed to track memory leaks and give you a heap summary at the end of your program's execution.
 
 The API is the following:
 
@@ -73,7 +73,7 @@ Ranges and mappings can be represented as such:
 ┗━━━━━━┻━━━━━━━━━━━┛    ┗━━━━━━┻━━━━━━━━━━━┛    ┗━━━━━━┻━━━━━━━━━━━┛    ┗━━━━━━┻━━━━━━━━━━━┛
 ```
 With this structure, we just have to store a pointer to the first range on the stack and we can let it expand itself as the user requests more memory.
-However, for the sake of optimisation, there are a total of 21 ranges stored on the stack.
+However, there are a total of 21 ranges stored on the stack.
 This allows allocations of similar sizes to stay close to eachother, preventing some fragmentation of the memory.
 Ranges that are pointed to from the heap are called **root ranges** and have a special flag in their metadata.
 
@@ -165,11 +165,11 @@ This library is thread-safe-**ish**. A mutex is locked before any write operatio
 This may or may not be related to my cpu's (4 cores - 8 threads) capabilities, but in any way it's a rabbithole I haven't had time to enter.
 
 # Performance
-The main metric when it comes to performance is allocations per seconds.
+The main metric when it comes to performance is **allocations per seconds**.
 
 ---
 
-The 2 following benchmark are "brute force" tests. We simply allocate some memory, free it, and repeat.
+The 2 following benchmarks are "brute force" tests. We simply allocate some memory, free it, and repeat.
 
 Here we compare `hahalloc` and `malloc` by asking $2^{15}$ pointers of increasing sizes. 
 ![haha](py/img/single_alloc.png)
@@ -191,7 +191,7 @@ Here, all allocations are 1MiB.
 ![haha](py/img/multiple_alloc_fixed_size.png)
 
 For this test, `hahalloc` has a small advantage until the linked list gets a bit too large and `mallocs` catches up. 
-Also wow i made waves ??
+Also wow I made waves ??
 
 This is a very similar test as the previous one, except allocations are random sizes between 1 and 1Mi bytes.
 ![haha](py/img/multiple_alloc_random_size.png)
@@ -212,8 +212,8 @@ Many improvements could be done to the data structure. First, the usage of linke
 
 Then, it would be interesting to store as litle data as possible on the stack. For example, only having a pointer to the first root and having everything else expand in the heap on its own. This is currently not done because it would require a new way of initializing the data structure with it's own `mmap` and `munmap`.
 
-### Oversize mappings.
+### Oversize mappings
 I don't really like the way oversize mappings are managed. Similarly, `mmap`ing 10x the size of requests close to a gigabyte and keeping them there until the program ends seems like a big limitation. It would be a big improvement to either change how these 2 regimes work or find a way to merge them into a more modular but consistent system.
 
 ### Thread safety
-Improving thread safety would be a good plus, at least making it work for n threads and not limit it to 4. Then, leaving the mutex behind and switching to something really scalable.
+Improving thread safety would be a good plus, at least making it work for $n$ threads and not limit it to 4. Then, leaving the mutex behind and switching to something really scalable.
