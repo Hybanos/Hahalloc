@@ -2,3 +2,5 @@
 .vscode/
 *.txt
 out
+*.o
+*.so
