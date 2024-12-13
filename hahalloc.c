@@ -6,10 +6,14 @@ void  pretty_print(range *r);
 
 // Ranges roots are stored on the stack, which probably is a big limitation
 range *roots[RANGE_SEGMENTS];
+// for leak detection
 static size_t oversize_alloc_count;
+// at_exist registration
 static bool has_init = false;
 pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
+// This function assigns a root to a requested 
+// size, yes it's basically log_2 of req_size
 int assign_root(size_t req_size) {
     for (int i = 1; i <= RANGE_SEGMENTS; i++) {
         if ((req_size + sizeof(range)) < SMALLEST_SEGMENT << i) {
@@ -19,8 +23,10 @@ int assign_root(size_t req_size) {
     return RANGE_SEGMENTS - 1;
 }
 
+// This is basically a lookup table
+// that maps root number to mmap alloc sizes
 size_t mapping_size_from_index(int index) {
-    size_t tmp = SMALLEST_SEGMENT << index;
+    size_t tmp = SMALLEST_SEGMENT << index+1;
 
     if (tmp > PAGESIZE) return tmp * 10;
     return PAGESIZE * 10;
@@ -50,7 +56,6 @@ void *hahalloc(size_t req_size) {
     // Initialize the first mapping
     if (roots[index] == NULL) {
         void *ptr = mmap(NULL, mapping_size_from_index(index), PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-        memset(ptr, 0, sizeof(range));
 
         root = ptr;
         root->prev = NULL;
@@ -66,7 +71,6 @@ void *hahalloc(size_t req_size) {
     } else {
         root = roots[index];
     }
-
 
     // Linked list parsing to find nearest available range
     range *curr = root;
@@ -137,6 +141,7 @@ void *hahalloc(size_t req_size) {
             new->next = NULL;
 
             curr->next = new;
+            // The while loop can now do one final step.
         }
         curr = curr->next;
     }
@@ -199,10 +204,10 @@ void frhehe(void *ptr) {
         }
     }
 
-    // We can munmap the mapping only within a few conditions:
+    // We can only munmap the mapping within 2 conditions:
     //  - the range must be at the start of a non-root mapping
     //  - the next range is either another mapping or non-existant
-    //       (basically the current range covers the full mapping)
+    //       (aka the current range covers the full mapping)
     if (curr->meta & IS_MAPPING_START) {
         #ifdef DEBUG
         printf("Unmmappable range\n");
@@ -262,6 +267,8 @@ void *rehehalloc(void * ptr, size_t size) {
     range *curr = ptr - sizeof(range);
     range *next = curr->next;
 
+    // We backup the next range, as it is likely we override some 
+    // data if the realloc amount is small.
     range back_next = *next;
 
     // We don't bother updating the pointer if 
@@ -275,10 +282,10 @@ void *rehehalloc(void * ptr, size_t size) {
     }
 
     // If the following range is free, we can expand into it.
-    if (
-            !(next->meta & IS_ALLOCATED) && 
-            !(next->meta & IS_MAPPING_START) &&
-            next->size > size - curr->size) {
+    // Prevents the use of memcpy.
+    if (!(next->meta & IS_ALLOCATED) && 
+        !(next->meta & IS_MAPPING_START) &&
+        next->size > size - curr->size) {
 
         #ifdef DEBUG
         printf("Resize realloc\n");
@@ -287,6 +294,8 @@ void *rehehalloc(void * ptr, size_t size) {
         pthread_mutex_lock(&lock);
 
         range *new = ptr + size;
+        // memset is important as it is likely there is some
+        // unwanted data here.
         memset(new, 0, sizeof(range));
 
         new->size = back_next.size - (size - curr->size);
@@ -310,6 +319,7 @@ void *rehehalloc(void * ptr, size_t size) {
     // the old data and return it
     void *newptr = hahalloc(size);
     memcpy(newptr, ptr, curr->size);
+    // don't forget to free
     frhehe(ptr);
     #ifdef DEBUG
     printf("realloc realloc.\n");
@@ -325,6 +335,9 @@ void *chahalloc(size_t size) {
     return ptr;
 }
 
+// Prints the heap summary at the end of execution.
+// This is basically a while loop that counts every
+// un-freed pointer and adds their sizes up for later display.
 void mem_lhihiks() {
     size_t active_ranges = oversize_alloc_count;
 
@@ -351,7 +364,7 @@ void mem_lhihiks() {
 
             int free_ranges = 0;
             int alloc_ranges = 0;
-            int alloc_mappings = 0;
+            int alloc_mappings = 1;
             size_t total_alloc_size = 0;
             size_t total_size = 0;
 
@@ -377,7 +390,7 @@ void mem_lhihiks() {
                 RED printf("%d ", alloc_ranges); RESET
             }
             
-            printf("allocated range(s) - %d free on %d mappings. (%lu / %lu Bytes).\n", free_ranges, alloc_mappings, total_alloc_size, total_size);
+            printf("allocated range(s) - %d free on %d mapping(s). (%lu / %lu Bytes).\n", free_ranges, alloc_mappings, total_alloc_size, total_size);
         }
     }
 
@@ -392,6 +405,7 @@ void mem_lhihiks() {
 
 }
 
+// absolute state of the are debug tool 💪
 void pretty_print(range *r) {
     range *curr = r;
     size_t total_size = 0;

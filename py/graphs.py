@@ -15,6 +15,7 @@ def single_alloc():
     plt.xscale('log', base=2)
     plt.yscale('log', base=2)
     # plt.show()
+    plt.title("2^15 alloc/free of increasing size.")
     plt.savefig("py/img/single_alloc.png")
     plt.close()
 
@@ -57,6 +58,7 @@ def calloc():
     plt.xscale('log', base=2)
     plt.yscale('log', base=2)
     # plt.show()
+    plt.title("2^5 calloc/free of increasing size.")
     plt.savefig("py/img/single_calloc.png")
     plt.close()
 

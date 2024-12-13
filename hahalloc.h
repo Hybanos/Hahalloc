@@ -37,7 +37,7 @@
 
 // from 512B to 1 GB
 #define SMALLEST_SEGMENT 1l << 8
-#define RANGE_SEGMENTS 22
+#define RANGE_SEGMENTS 21
 
 typedef struct range {
     struct range *prev;
