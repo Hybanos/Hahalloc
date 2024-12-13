@@ -22,8 +22,6 @@ int main() {
     realloc_test();
     thread_lock();
 
-    hahalloc(200000);
-
     return 0;
 }
 

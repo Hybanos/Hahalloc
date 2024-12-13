@@ -13,8 +13,8 @@ void re_alloc();
 
 int main() {
 
-    multiple_alloc_random_size();
     multiple_alloc_fixed_size();
+    multiple_alloc_random_size();
     single_alloc();
     c_alloc();
     re_alloc();
@@ -58,14 +58,14 @@ void multiple_alloc_fixed_size() {
     FILE *f;
     f = fopen("py/multiple_alloc_fixed_size.txt", "w");
 
-    int MAX_BUFF = 200;
+    int MAX_BUFF = 500;
     int *buff[MAX_BUFF];
 
     for (int i = 0; i < MAX_BUFF; i++) {
         buff[i] = NULL;
     }
 
-    for (int buff_size = 1; buff_size <= MAX_BUFF; buff_size++) {
+    for (int buff_size = 1; buff_size <= MAX_BUFF; buff_size+=2) {
         printf("multiple alloc fixed size, run %d\r", buff_size);
 
         size_t size = 1 << 20;
@@ -130,14 +130,14 @@ void multiple_alloc_random_size() {
     FILE *f;
     f = fopen("py/multiple_alloc_random_size.txt", "w");
 
-    int MAX_BUFF = 200;
+    int MAX_BUFF = 500;
     int *buff[MAX_BUFF];
 
     for (int i = 0; i < MAX_BUFF; i++) {
         buff[i] = NULL;
     }
 
-    for (int buff_size = 1; buff_size <= MAX_BUFF; buff_size++) {
+    for (int buff_size = 1; buff_size <= MAX_BUFF; buff_size+=2) {
         printf("multiple alloc random size, run %d\r", buff_size);
 
         srand(4949492);
@@ -148,7 +148,7 @@ void multiple_alloc_random_size() {
             int index = rand() % buff_size;
 
             if (buff[index] == NULL) {
-                size_t size = (rand() % 128)  << (rand() % 10);
+                size_t size = (rand() % 128)  << (rand() % 20);
                 buff[index] = hahalloc(size);
             }
             else {
@@ -173,7 +173,7 @@ void multiple_alloc_random_size() {
             int index = rand() % buff_size;
 
             if (buff[index] == NULL) {
-                size_t size = (rand() % 128)  << (rand() % 10);
+                size_t size = (rand() % 128)  << (rand() % 20);
                 buff[index] = malloc(size);
             }
             else {
@@ -237,9 +237,9 @@ void c_alloc() {
     f = fopen("py/single_calloc.txt", "w");
 
     for (double i = 1; i < (1l << 30); i *= 1.2) {
-        printf("single calloc test: %d%% done (don't worry it doesn't speed up)\r", (int)(i / (1l << 30) * 100));
+        printf("single calloc test: %d%% done (don't worry it doesn't speed up)\n", (int)(i / (1l << 30) * 100));
         gettimeofday(&tic, NULL);
-        for (int j = 0; j < 256; j++) {
+        for (int j = 0; j < 64; j++) {
             int *ptr = chahalloc((size_t) i);
             frhehe(ptr);
         }
@@ -247,8 +247,8 @@ void c_alloc() {
         size_t haha_dt = (tac.tv_sec - tic.tv_sec) * 1000000 + (tac.tv_usec - tic.tv_usec);
 
         gettimeofday(&tic, NULL);
-        for (int j = 0; j < 256; j++) {
-            int *ptr = malloc((size_t) i);
+        for (int j = 0; j < 64; j++) {
+            int *ptr = calloc(i, sizeof(void *));
             free(ptr);
         }
         gettimeofday(&tac, NULL);

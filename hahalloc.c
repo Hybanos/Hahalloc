@@ -283,7 +283,8 @@ void *rehehalloc(void * ptr, size_t size) {
 
     // If the following range is free, we can expand into it.
     // Prevents the use of memcpy.
-    if (!(next->meta & IS_ALLOCATED) && 
+    if (!(next->meta & IS_OVERSIZE) &&
+        !(next->meta & IS_ALLOCATED) && 
         !(next->meta & IS_MAPPING_START) &&
         next->size > size - curr->size) {
 
