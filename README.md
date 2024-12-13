@@ -41,7 +41,7 @@ You can call this function at any time to print a heap summary to `stdout`.
 
 # Using Hahalloc
 To compile the library, simply clone the repo and run `make`.
-To run tests and / or performance benchmark, run `make tests`, `make bench` or `make all`.
+To execute tests and / or performance benchmark, run `make tests`, `make bench` or `make all`.
 To link this library to another program, run it with: 
 ```bash
 LD_LIBRARY_PATH=<path_to_libhahaloc.so>:$LD_LIBRARY_PATH
@@ -66,7 +66,7 @@ In order to allow the allocation of *"infinite"* ranges, a double linked list is
 
 Ranges and mappings can be represented as such:
 ```
-├───────────────── mapping 1 ──────────────┤    ├───────────────── mapping 2 ──────────────┤ ...
+├───────────────── mapping 1 ──────────────┤    ├───────────────── mapping 2 ──────────────┤ 
 ├───── range 1 ────┤    ├───── range 2 ────┤    ├───── range 3 ────┤    ├───── range 4 ────┤
 ┏━━━━━━┳━━━━━━━━━━━┓    ┏━━━━━━┳━━━━━━━━━━━┓    ┏━━━━━━┳━━━━━━━━━━━┓    ┏━━━━━━┳━━━━━━━━━━━┓
 ┃ meta ┃ user data ┃ -> ┃ meta ┃ user data ┃ -> ┃ meta ┃ user data ┃ -> ┃ meta ┃ user data ┃ ...
@@ -93,7 +93,7 @@ We can represent the total memory structure like so:
 ┃ ROOT 21 ┃ -> ┃ mapping 1 ┃ -> NULL
 ┗━━━━━━━━━┛    ┗━━━━━━━━━━━┛
 ```
-Better justification of this choice of structure can be found in the [Optimisation](#optimisation) section.
+Better justification of this choice of structure can be found in the [Optimisation](#optimisations) section.
 
 ### Range struct
 
@@ -133,12 +133,11 @@ This allows us to give ranges extremely fast when the mapping is not full.
 Grouping ranges of similar sizes together prevents us for saturating the linked lists and thus reduces the time to find a free range. 
 
 ### Memory de-fragmentation
-Memory fragmentation is a huge issue, and even more so as the number of active pointers grow. Time to find a free range increases linearly with
-the number of ranges of a linked list, which can cause severe performance issue long-term.
+Memory fragmentation is a huge issue, and even more so as the number of active pointers grow. Time to find a free range increases linearly with the number of ranges of a linked list, which can cause severe performance issue long-term.
 Several mecanisms are in place to prevent memory fragmentation:
 
 #### Coalescence
-This is simply the act of merging free ranges together. Not only does this reduces the size of our linked list, it also increases dramatically the chance of fitting our next request.
+This is simply the act of merging neighbooring free ranges together. Not only does this reduces the size of our linked list, it also increases dramatically the chance of our next request fitting.
 This merging of both left and right neighboors justifies the choice of using a double linked list and guarantees we never have 2 free blocks next to eachother (on the same mapping of course).  
 
 #### Innacessible range prevention
@@ -174,11 +173,13 @@ The 2 following benchmark are "brute force" tests. We simply allocate some memor
 
 Here we compare `hahalloc` and `malloc` by asking $2^{15}$ pointers of increasing sizes. 
 ![haha](py/img/single_alloc.png)
-We can see that performace is quite even, with a few variations on `malloc`'s side probably due to some inner-workings. We can also clearly see the change of regime of both allocators when pointers get excessively big.
+
+We can see that performace is quite even, with a few variations on `malloc`'s side probably due to some complex inner-workings. We can also clearly see the change of regime of both allocators when pointers get excessively big.
 
 
 Pretty much the same thing, but for `chahalloc`/`calloc`
 ![haha](py/img/single_calloc.png)
+
 Once again, performance is very similar. `calloc` seems to get a lot smarter past $2^{22}$ bytes tho.
 
 ---
@@ -188,11 +189,13 @@ These tests are allocating pointers and freeing them, but **in a random order**.
 
 Here, all allocations are 1MiB.
 ![haha](py/img/multiple_alloc_fixed_size.png)
+
 For this test, `hahalloc` has a small advantage until the linked list gets a bit too large and `mallocs` catches up. 
 Also wow i made waves ??
 
 This is a very similar test as the previous one, except allocations are random sizes between 1 and 1Mi bytes.
 ![haha](py/img/multiple_alloc_random_size.png)
+
 Here the multiple roots are clearly paying off, we are able to keep up with `malloc` until about 170 active pointers in average, and performance stays really close after that.
 
 ---
@@ -203,3 +206,14 @@ Here the multiple roots are clearly paying off, we are able to keep up with `mal
 With that in mind, it's safe to say that in cherry-picked short-running applications and high-entropy pointer allocations, Hahalloc is faster than the standard library.
 
 # Possible improvements
+
+### Data structure
+Many improvements could be done to the data structure. First, the usage of linked list is justified when switching between mappings, but gets harder to defend when working from range to range in the same mapping. Having a more static data structure inside of those would probably make a lot more sense and improve performances a lot.
+
+Then, it would be interesting to store as litle data as possible on the stack. For example, only having a pointer to the first root and having everything else expand in the heap on its own. This is currently not done because it would require a new way of initializing the data structure with it's own `mmap` and `munmap`.
+
+### Oversize mappings.
+I don't really like the way oversize mappings are managed. Similarly, `mmap`ing 10x the size of requests close to a gigabyte and keeping them there until the program ends seems like a big limitation. It would be a big improvement to either change how these 2 regimes work or find a way to merge them into a more modular but consistent system.
+
+### Thread safety
+Improving thread safety would be a good plus, at least making it work for n threads and not limit it to 4. Then, leaving the mutex behind and switching to something really scalable.
