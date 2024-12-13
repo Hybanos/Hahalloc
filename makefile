@@ -8,7 +8,7 @@ tests: lib
 	LD_LIBRARY_PATH=.:$$LD_LIBRARY_PATH ./out
 
 bench: lib
-	gcc -O0 speed.c -L. -lhahalloc -o out -lm
+	gcc -O0 bench.c -L. -lhahalloc -o out -lm
 
 	echo " *\n * THIS CAN TAKE QUITE A LONG TIME\n *"
 
