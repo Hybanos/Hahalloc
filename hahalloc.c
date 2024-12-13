@@ -36,10 +36,10 @@ void *hahalloc(size_t req_size) {
 
     // Invalid request size
     if (req_size == 0) return NULL;
-    pthread_mutex_lock(&lock);
 
     // Ranges above 1GB are delivered on their own
-    if (req_size > SMALLEST_SEGMENT << RANGE_SEGMENTS) return oversize_alloc(req_size);
+    if (req_size > SMALLEST_SEGMENT << RANGE_SEGMENTS) {return oversize_alloc(req_size);}
+    pthread_mutex_lock(&lock);
 
     int index = assign_root(req_size);
     #ifdef DEBUG
@@ -84,11 +84,11 @@ void *hahalloc(size_t req_size) {
                 if ((curr->size + sizeof(range)) - (req_size + sizeof(range)) <
                     SMALLEST_SEGMENT << (index + 1) / 2) {
                     // Flipping current range
-                    // printf("%lu, %lu, %d %d\n", req_size, curr->size, index, curr->meta);
                     curr->meta |= IS_ALLOCATED;
                     #ifdef DEBUG
                     pretty_print(root);
                     #endif
+                    pthread_mutex_unlock(&lock);
                     return ((void *) curr) + sizeof(range);
                 } else {
                     // We have to split the free range into an allocated one and a
@@ -129,7 +129,6 @@ void *hahalloc(size_t req_size) {
             #endif
 
             void *ptr = mmap(NULL, mapping_size_from_index(index), PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-            memset(ptr, 0, sizeof(range));
 
             range *new = ptr;
             new->prev = curr;
@@ -262,7 +261,8 @@ void *rehehalloc(void * ptr, size_t size) {
     #endif
     range *curr = ptr - sizeof(range);
     range *next = curr->next;
-    void *next_next = next->next;
+
+    range back_next = *next;
 
     // We don't bother updating the pointer if 
     // the requested size is smaller than before.
@@ -287,16 +287,16 @@ void *rehehalloc(void * ptr, size_t size) {
         pthread_mutex_lock(&lock);
 
         range *new = ptr + size;
+        memset(new, 0, sizeof(range));
 
-        new->size = next->size - (size - curr->size);
+        new->size = back_next.size - (size - curr->size);
         new->meta = 0;
         new->prev = curr;
-        new->next = next->next;
+        new->next = back_next.next;
         curr->next = new;
-        // we have to use next_next because sometimes the old next
-        // range would get overritten
-        if (next_next != NULL) {
-            next->next->prev = new;
+
+        if (back_next.next != NULL) {
+            back_next.next->prev = new;
         }
         curr->size = size;
         #ifdef DEBUG
@@ -315,16 +315,13 @@ void *rehehalloc(void * ptr, size_t size) {
     printf("realloc realloc.\n");
     pretty_print(curr);
     #endif
-    pthread_mutex_unlock(&lock);
     return newptr;
 }
 
 void *chahalloc(size_t size) {
-    pthread_mutex_lock(&lock);
     void *ptr = hahalloc(size);
     // idk how malloc's memeset is so fast 
     memset(ptr, 0, size);
-    pthread_mutex_unlock(&lock);
     return ptr;
 }
 

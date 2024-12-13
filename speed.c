@@ -5,11 +5,11 @@
 
 #include "hahalloc.h"
 
-void single_alloc();
 void multiple_alloc_fixed_size();
 void multiple_alloc_random_size();
-void re_alloc();
+void single_alloc();
 void c_alloc();
+void re_alloc();
 
 int main() {
 
@@ -196,7 +196,6 @@ void multiple_alloc_random_size() {
     printf("\n");
     fclose(f);
 }
-
 
 void re_alloc() {
     struct timeval tic, tac;
