@@ -4,7 +4,7 @@ A lightweight, thread-safe[*](#thread-safety) memory allocator written in C, tha
 
 The API is the following:
 
-| Hahalloc | STD equivalent | 
+| Hahalloc | STDlib equivalent | 
 |---|--- |
 | hahalloc | malloc |
 | frhehe | free |
@@ -27,7 +27,7 @@ Same as `free`, liberates the pointer's memory. Further use of `ptr` might resul
 ```C
 void *rehehalloc(void *ptr, size_t size);
 ```
-Once again this behaves like it's STD's counterpart, with the difference that `size` can be smaller than the allocated size of `ptr`. A pointer to the newly-allocated memory is returned.
+Once again this behaves like it's STDlib's counterpart, with the difference that `size` can be smaller than the allocated size of `ptr`. A pointer to the newly-allocated memory is returned.
 
 ```C
 void *chahalloc(size_t size);
